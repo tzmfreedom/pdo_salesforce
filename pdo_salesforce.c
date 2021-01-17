@@ -16,6 +16,46 @@
 	ZEND_PARSE_PARAMETERS_END()
 #endif
 
+static int pdo_salesforce_handle_factory(pdo_dbh_t *dbh, zval *driver_options) /* {{{ */
+{
+	pdo_salesforce_db_handle *H;
+	int i, ret = 0;
+	zend_long timeout = 60, flags;
+	char *filename;
+
+//	H = pecalloc(1, sizeof(pdo_sqlite_db_handle), dbh->is_persistent);
+
+	H->einfo.errcode = 0;
+	H->einfo.errmsg = NULL;
+	dbh->driver_data = H;
+    // login salesforce
+    // dbh->data_source
+
+	dbh->alloc_own_columns = 1;
+	dbh->max_escaped_char_length = 2;
+
+	ret = 1;
+
+cleanup:
+	// dbh->methods = &salesforce_methods;
+
+	return ret;
+}
+/* }}} */
+
+const pdo_driver_t pdo_salesforce_driver = {
+	PDO_DRIVER_HEADER(salesforce),
+	pdo_salesforce_handle_factory
+};
+
+
+/* {{{ pdo_salesforce_deps */
+static const zend_module_dep pdo_salesforce_deps[] = {
+	ZEND_MOD_REQUIRED("pdo")
+	ZEND_MOD_END
+};
+/* }}} */
+
 /* {{{ void test1() */
 PHP_FUNCTION(test1)
 {
@@ -25,24 +65,6 @@ PHP_FUNCTION(test1)
 }
 /* }}} */
 
-/* {{{ string test2( [ string $var ] ) */
-PHP_FUNCTION(test2)
-{
-	char *var = "World";
-	size_t var_len = sizeof("World") - 1;
-	zend_string *retval;
-
-	ZEND_PARSE_PARAMETERS_START(0, 1)
-		Z_PARAM_OPTIONAL
-		Z_PARAM_STRING(var, var_len)
-	ZEND_PARSE_PARAMETERS_END();
-
-	retval = strpprintf(0, "Hello %s", var);
-
-	RETURN_STR(retval);
-}
-/* }}}*/
-
 /* {{{ PHP_RINIT_FUNCTION */
 PHP_RINIT_FUNCTION(pdo_salesforce)
 {
@@ -50,6 +72,14 @@ PHP_RINIT_FUNCTION(pdo_salesforce)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 
+	return SUCCESS;
+}
+/* }}} */
+
+/* {{{ PHP_MSHUTDOWN_FUNCTION */
+PHP_MSHUTDOWN_FUNCTION(pdo_salesforce)
+{
+	php_pdo_unregister_driver(&pdo_salesforce_driver);
 	return SUCCESS;
 }
 /* }}} */
@@ -65,11 +95,12 @@ PHP_MINFO_FUNCTION(pdo_salesforce)
 
 /* {{{ pdo_salesforce_module_entry */
 zend_module_entry pdo_salesforce_module_entry = {
-	STANDARD_MODULE_HEADER,
+	STANDARD_MODULE_HEADER_EX, NULL,
+	pdo_salesforce_deps,
 	"pdo_salesforce",					/* Extension name */
 	ext_functions,					/* zend_function_entry */
 	NULL,							/* PHP_MINIT - Module initialization */
-	NULL,							/* PHP_MSHUTDOWN - Module shutdown */
+	PHP_MSHUTDOWN(pdo_salesforce),							/* PHP_MSHUTDOWN - Module shutdown */
 	PHP_RINIT(pdo_salesforce),			/* PHP_RINIT - Request initialization */
 	NULL,							/* PHP_RSHUTDOWN - Request shutdown */
 	PHP_MINFO(pdo_salesforce),			/* PHP_MINFO - Module info */
@@ -77,6 +108,7 @@ zend_module_entry pdo_salesforce_module_entry = {
 	STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
+
 
 #ifdef COMPILE_DL_PDO_SALESFORCE
 # ifdef ZTS
