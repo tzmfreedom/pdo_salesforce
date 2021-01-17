@@ -48,6 +48,25 @@ const pdo_driver_t pdo_salesforce_driver = {
 	pdo_salesforce_handle_factory
 };
 
+static const struct pdo_dbh_methods salesforce_methods = {
+	salesforce_handle_closer,
+	salesforce_handle_preparer,
+	salesforce_handle_doer,
+	salesforce_handle_quoter,
+	salesforce_handle_begin,
+	salesforce_handle_commit,
+	salesforce_handle_rollback,
+	pdo_salesforce_set_attr,
+	pdo_salesforce_last_insert_id,
+	pdo_salesforce_fetch_error_func,
+	pdo_salesforce_get_attribute,
+	NULL,	/* check_liveness: not needed */
+	get_driver_methods,
+	pdo_salesforce_request_shutdown,
+	NULL, /* in transaction, use PDO's internal tracking mechanism */
+	pdo_salesforce_get_gc
+};
+
 
 /* {{{ pdo_salesforce_deps */
 static const zend_module_dep pdo_salesforce_deps[] = {
